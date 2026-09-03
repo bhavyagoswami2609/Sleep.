@@ -1,0 +1,1265 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>sleep.</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display&display=swap" rel="stylesheet">
+<style>
+  /* ── Reset & Base ───────────────────────────────────── */
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg-deep:    #080c18;
+    --bg-card:    rgba(14, 20, 38, .85);
+    --bg-input:   #141c30;
+    --border:     #1a2440;
+    --accent:     #7c9aff;
+    --accent-dim: #4a6abf;
+    --accent-glow: rgba(124, 154, 255, .18);
+    --text:       #e2e8f0;
+    --text-dim:   #8898b5;
+    --text-faint: #3e4f6a;
+    --green:      #6ee7a0;
+    --green-dim:  rgba(110, 231, 160, .10);
+    --radius:     14px;
+    --radius-sm:  10px;
+    --font:       'Segoe UI', system-ui, -apple-system, sans-serif;
+    --transition: .25s cubic-bezier(.4,0,.2,1);
+  }
+
+  html { font-size: 16px; }
+
+  body {
+    font-family: var(--font);
+    background: var(--bg-deep);
+    color: var(--text);
+    min-height: 100dvh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 0 16px 48px;
+    overflow-x: hidden;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  /* ── Starfield canvas ───────────────────────────────── */
+  #starfield {
+    position: fixed;
+    inset: 0;
+    z-index: 0;
+    pointer-events: none;
+  }
+
+  /* ── All content above canvas ───────────────────────── */
+  .header, .container, .site-footer {
+    position: relative;
+    z-index: 1;
+  }
+
+  /* ── Header ─────────────────────────────────────────── */
+  .header {
+    text-align: center;
+    padding: 48px 0 16px;
+    width: 100%;
+    max-width: 520px;
+  }
+  .header h1 {
+    font-family: 'DM Serif Display', Georgia, serif;
+    font-size: 3.2rem;
+    font-weight: 400;
+    letter-spacing: .04em;
+    background: linear-gradient(160deg, #ffffff 30%, var(--accent) 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    filter: drop-shadow(0 0 20px rgba(124,154,255,.25));
+    margin-bottom: 6px;
+  }
+  .header p {
+    font-size: .85rem;
+    color: var(--text-dim);
+    font-weight: 400;
+    letter-spacing: .01em;
+  }
+
+  /* ── Main container ─────────────────────────────────── */
+  .container {
+    width: 100%;
+    max-width: 520px;
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+  }
+
+  /* ── Card ────────────────────────────────────────────── */
+  .card {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 22px 20px;
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    transition: border-color var(--transition);
+  }
+  .card:hover { border-color: #243052; }
+
+  .card-title {
+    font-size: .72rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: .08em;
+    color: var(--text-dim);
+  }
+
+  /* ── Toggle (mode switch) ───────────────────────────── */
+  .mode-toggle {
+    display: flex;
+    background: var(--bg-input);
+    border-radius: var(--radius-sm);
+    padding: 4px;
+    gap: 4px;
+  }
+  .mode-btn {
+    flex: 1;
+    padding: 11px 8px;
+    border: none;
+    border-radius: 8px;
+    background: transparent;
+    color: var(--text-dim);
+    font-size: .82rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all var(--transition);
+    font-family: var(--font);
+    white-space: nowrap;
+  }
+  .mode-btn.active {
+    background: var(--accent);
+    color: #080c18;
+    box-shadow: 0 2px 12px rgba(124,154,255,.35);
+  }
+  .mode-btn:not(.active):hover {
+    color: var(--text);
+    background: rgba(255,255,255,.04);
+  }
+
+  /* ── Settings row ───────────────────────────────────── */
+  .settings-row {
+    display: flex;
+    gap: 12px;
+  }
+  .setting-group {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+  }
+  .setting-group label {
+    font-size: .72rem;
+    font-weight: 500;
+    color: var(--text-dim);
+    text-transform: uppercase;
+    letter-spacing: .06em;
+  }
+  .setting-group input[type="number"] {
+    width: 100%;
+    background: var(--bg-input);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 10px 12px;
+    color: var(--text);
+    font-size: .95rem;
+    font-family: var(--font);
+    text-align: center;
+    transition: border-color var(--transition), box-shadow var(--transition);
+    -moz-appearance: textfield;
+  }
+  .setting-group input[type="number"]::-webkit-inner-spin-button,
+  .setting-group input[type="number"]::-webkit-outer-spin-button {
+    -webkit-appearance: none;
+  }
+  .setting-group input[type="number"]:focus {
+    outline: none;
+    border-color: var(--accent);
+    box-shadow: 0 0 0 3px var(--accent-glow);
+  }
+
+  .setting-input-wrap {
+    display: flex;
+    align-items: stretch;
+    gap: 0;
+    border-radius: 8px;
+    overflow: hidden;
+    border: 1px solid var(--border);
+    transition: border-color var(--transition);
+  }
+  .setting-input-wrap:focus-within {
+    border-color: var(--accent);
+    box-shadow: 0 0 0 3px var(--accent-glow);
+  }
+  .setting-input-wrap input[type="number"] {
+    border: none;
+    border-radius: 0;
+    flex: 1;
+    min-width: 0;
+  }
+  .setting-input-wrap input[type="number"]:focus {
+    box-shadow: none;
+  }
+  .setting-step {
+    background: var(--bg-input);
+    border: none;
+    border-left: 1px solid var(--border);
+    color: var(--text-dim);
+    font-size: .85rem;
+    font-weight: 600;
+    font-family: var(--font);
+    padding: 0 12px;
+    cursor: pointer;
+    transition: all var(--transition);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    user-select: none;
+    line-height: 1;
+  }
+  .setting-step:first-child {
+    border-left: none;
+    border-right: 1px solid var(--border);
+  }
+  .setting-step:hover {
+    background: rgba(124,154,255,.1);
+    color: var(--accent);
+  }
+  .setting-step:active {
+    background: rgba(124,154,255,.18);
+  }
+
+  /* ── Time picker ────────────────────────────────────── */
+  .time-section { text-align: center; }
+  .time-label {
+    font-size: .85rem;
+    color: var(--text-dim);
+    margin-bottom: 10px;
+  }
+
+  .time-picker-wrap {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+  }
+
+  .time-input-native {
+    background: var(--bg-input);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    padding: 14px 20px;
+    color: var(--text);
+    font-size: 1.8rem;
+    font-weight: 600;
+    font-family: var(--font);
+    text-align: center;
+    letter-spacing: .04em;
+    transition: border-color var(--transition);
+    width: auto;
+    min-width: 180px;
+    -webkit-appearance: none;
+    appearance: none;
+    color-scheme: dark;
+  }
+  .time-input-native:focus {
+    outline: none;
+    border-color: var(--accent);
+    box-shadow: 0 0 0 3px var(--accent-glow);
+  }
+  .time-input-native::-webkit-calendar-picker-indicator {
+    filter: invert(1) brightness(0.7);
+    cursor: pointer;
+  }
+
+  .now-btn {
+    background: var(--accent-dim);
+    color: #fff;
+    border: none;
+    border-radius: 8px;
+    padding: 12px 18px;
+    font-size: .8rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background var(--transition);
+    font-family: var(--font);
+    white-space: nowrap;
+  }
+  .now-btn:hover { background: var(--accent); color: #080c18; }
+
+  .time-steppers {
+    display: flex;
+    gap: 6px;
+    margin-top: 10px;
+    justify-content: center;
+  }
+  .step-btn {
+    background: var(--bg-input);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    color: var(--text-dim);
+    font-size: .8rem;
+    font-weight: 600;
+    font-family: var(--font);
+    padding: 8px 14px;
+    cursor: pointer;
+    transition: all var(--transition);
+    line-height: 1;
+  }
+  .step-btn:hover {
+    border-color: var(--accent);
+    color: var(--text);
+    background: rgba(124,154,255,.08);
+  }
+  .step-btn:active { transform: scale(.95); }
+
+  .calculate-btn {
+    display: block;
+    width: 100%;
+    margin-top: 16px;
+    padding: 14px;
+    border: none;
+    border-radius: var(--radius-sm);
+    background: linear-gradient(135deg, var(--accent-dim), var(--accent));
+    color: #080c18;
+    font-size: .95rem;
+    font-weight: 700;
+    font-family: var(--font);
+    cursor: pointer;
+    transition: all var(--transition);
+    letter-spacing: .01em;
+  }
+  .calculate-btn:hover {
+    box-shadow: 0 4px 24px rgba(124,154,255,.4);
+    transform: translateY(-1px);
+  }
+  .calculate-btn:active { transform: translateY(0); }
+
+  /* ── Results ────────────────────────────────────────── */
+  .results-card { display: none; }
+  .results-card.visible { display: block; }
+
+  .results-heading {
+    font-size: .85rem;
+    color: var(--text-dim);
+    margin-bottom: 14px;
+    text-align: center;
+    line-height: 1.5;
+  }
+  .results-heading strong {
+    color: var(--accent);
+    font-weight: 700;
+  }
+
+  .result-list {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .result-item {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    padding: 16px;
+    background: var(--bg-input);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    transition: all var(--transition);
+  }
+  .result-item:hover {
+    border-color: #2a3a5c;
+    background: #1c2843;
+  }
+  .result-item.recommended {
+    border-color: rgba(110,231,160,.25);
+    background: var(--green-dim);
+  }
+  .result-item.recommended:hover {
+    border-color: rgba(110,231,160,.45);
+  }
+
+  .result-time {
+    font-size: 1.4rem;
+    font-weight: 700;
+    letter-spacing: -.01em;
+    white-space: nowrap;
+    min-width: 90px;
+  }
+  .result-item.recommended .result-time { color: var(--green); }
+
+  .result-meta { flex: 1; min-width: 0; }
+  .result-cycles {
+    font-size: .8rem;
+    color: var(--text-dim);
+    font-weight: 500;
+  }
+  .result-duration {
+    font-size: .75rem;
+    color: var(--text-faint);
+    margin-top: 2px;
+  }
+
+  .result-badge {
+    font-size: .62rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: .06em;
+    background: rgba(110,231,160,.14);
+    color: var(--green);
+    padding: 4px 10px;
+    border-radius: 20px;
+    white-space: nowrap;
+    flex-shrink: 0;
+  }
+
+  .alarm-btn {
+    background: none;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    color: var(--text-faint);
+    padding: 8px;
+    cursor: pointer;
+    transition: all var(--transition);
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .alarm-btn:hover {
+    border-color: var(--accent);
+    color: var(--accent);
+    background: rgba(124,154,255,.08);
+  }
+  .alarm-btn:active { transform: scale(.9); }
+  .alarm-btn svg { width: 16px; height: 16px; }
+
+  /* ── CSV Upload ─────────────────────────────────────── */
+  .csv-section { position: relative; }
+
+  .csv-toggle-btn {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    background: none;
+    border: none;
+    color: var(--text-dim);
+    font-size: .8rem;
+    font-weight: 500;
+    cursor: pointer;
+    padding: 0;
+    font-family: var(--font);
+    transition: color var(--transition);
+  }
+  .csv-toggle-btn:hover { color: var(--text); }
+  .csv-toggle-btn .chevron {
+    display: inline-block;
+    transition: transform var(--transition);
+    font-size: .6rem;
+  }
+  .csv-toggle-btn.open .chevron { transform: rotate(90deg); }
+
+  .csv-body {
+    display: none;
+    margin-top: 14px;
+  }
+  .csv-body.visible { display: block; }
+
+  .csv-note {
+    font-size: .75rem;
+    color: var(--text-dim);
+    background: rgba(124,154,255,.05);
+    border: 1px solid rgba(124,154,255,.1);
+    border-radius: 8px;
+    padding: 12px 14px;
+    margin-bottom: 14px;
+    line-height: 1.6;
+  }
+  .csv-note code {
+    background: rgba(255,255,255,.06);
+    padding: 1px 5px;
+    border-radius: 4px;
+    font-size: .72rem;
+    color: var(--accent);
+  }
+
+  .csv-drop-zone {
+    border: 2px dashed var(--border);
+    border-radius: var(--radius-sm);
+    padding: 28px 16px;
+    text-align: center;
+    transition: all var(--transition);
+    cursor: pointer;
+    position: relative;
+  }
+  .csv-drop-zone:hover,
+  .csv-drop-zone.dragover {
+    border-color: var(--accent);
+    background: var(--accent-glow);
+  }
+  .csv-drop-zone .drop-icon {
+    font-size: 1.3rem;
+    margin-bottom: 6px;
+    color: var(--text-dim);
+  }
+  .csv-drop-zone p {
+    font-size: .8rem;
+    color: var(--text-dim);
+  }
+  .csv-drop-zone input[type="file"] {
+    position: absolute;
+    inset: 0;
+    opacity: 0;
+    cursor: pointer;
+  }
+
+  .csv-result {
+    display: none;
+    margin-top: 14px;
+    padding: 14px;
+    background: var(--green-dim);
+    border: 1px solid rgba(110,231,160,.2);
+    border-radius: 8px;
+    font-size: .8rem;
+    color: var(--text);
+    line-height: 1.6;
+  }
+  .csv-result.visible { display: block; }
+  .csv-result.error {
+    background: rgba(239,68,68,.08);
+    border-color: rgba(239,68,68,.25);
+  }
+  .csv-result strong { color: var(--green); }
+  .csv-result.error strong { color: #ef4444; }
+
+  .csv-apply-btn {
+    margin-top: 10px;
+    padding: 10px 18px;
+    border: none;
+    border-radius: 8px;
+    background: var(--green);
+    color: #080c18;
+    font-size: .8rem;
+    font-weight: 700;
+    cursor: pointer;
+    font-family: var(--font);
+    transition: all var(--transition);
+  }
+  .csv-apply-btn:hover {
+    box-shadow: 0 2px 12px rgba(110,231,160,.35);
+  }
+
+  /* ── Footer ─────────────────────────────────────────── */
+  .site-footer {
+    text-align: center;
+    padding: 40px 0 20px;
+    max-width: 520px;
+    width: 100%;
+  }
+
+  .footer-quote {
+    position: fixed;
+    bottom: 10px;
+    right: 14px;
+    font-size: .6rem;
+    font-style: italic;
+    color: var(--text-faint);
+    opacity: .5;
+    letter-spacing: .02em;
+    z-index: 2;
+    pointer-events: none;
+    user-select: none;
+  }
+
+  .footer-links {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 14px;
+    margin-bottom: 10px;
+  }
+
+  .ig-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    color: var(--text-dim);
+    text-decoration: none;
+    font-size: .78rem;
+    font-weight: 500;
+    transition: color var(--transition);
+    padding: 6px 14px;
+    border: 1px solid rgba(255,255,255,.08);
+    border-radius: 20px;
+  }
+  .ig-link:hover { color: #e1306c; border-color: rgba(225,48,108,.3); }
+  .ig-link svg { width: 16px; height: 16px; fill: currentColor; }
+
+  .footer-credit {
+    font-size: .72rem;
+    color: var(--text-faint);
+    letter-spacing: .02em;
+  }
+
+  .footer-privacy {
+    font-size: .65rem;
+    color: var(--text-faint);
+    margin-top: 12px;
+    opacity: .7;
+  }
+
+  /* ── Responsive ─────────────────────────────────────── */
+  @media (max-width: 420px) {
+    .header h1 { font-size: 2.6rem; }
+    .time-input-native { font-size: 1.5rem; padding: 12px 14px; min-width: 150px; }
+    .result-time { font-size: 1.2rem; min-width: 80px; }
+    .mode-btn { font-size: .74rem; padding: 10px 6px; }
+    .settings-row { flex-direction: column; gap: 10px; }
+    .card { padding: 18px 16px; }
+  }
+
+  /* Tablet landscape & small laptops */
+  @media (min-width: 768px) {
+    .header { padding-top: 60px; }
+    .header h1 { font-size: 3.6rem; }
+    .card { padding: 26px 24px; }
+  }
+
+  /* Large screens */
+  @media (min-width: 1200px) {
+    .header { padding-top: 72px; }
+    .header h1 { font-size: 4rem; }
+  }
+
+  /* ── Animations ─────────────────────────────────────── */
+  .fade-in {
+    animation: fadeIn .4s ease-out both;
+  }
+  @keyframes fadeIn {
+    from { opacity: 0; transform: translateY(10px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+  .result-item:nth-child(1) { animation-delay: .05s; }
+  .result-item:nth-child(2) { animation-delay: .1s; }
+  .result-item:nth-child(3) { animation-delay: .15s; }
+  .result-item:nth-child(4) { animation-delay: .2s; }
+  .result-item:nth-child(5) { animation-delay: .25s; }
+</style>
+</head>
+<body>
+
+<!-- ── Starfield canvas ───────────────────────────────── -->
+<canvas id="starfield"></canvas>
+
+<!-- ── Header ─────────────────────────────────────────── -->
+<header class="header">
+  <h1>sleep.</h1>
+  <p>wake up at the end of a cycle, not in the middle of one</p>
+</header>
+
+<main class="container">
+
+  <!-- ── Mode Toggle ──────────────────────────────────── -->
+  <div class="card">
+    <div class="mode-toggle" role="tablist">
+      <button class="mode-btn active" role="tab" data-mode="wake" aria-selected="true">I want to wake up at</button>
+      <button class="mode-btn"        role="tab" data-mode="sleep" aria-selected="false">I'm going to bed at</button>
+    </div>
+  </div>
+
+  <!-- ── Settings ─────────────────────────────────────── -->
+  <div class="card">
+    <div class="card-title" style="margin-bottom:14px">Settings</div>
+    <div class="settings-row">
+      <div class="setting-group">
+        <label for="cycle-len">Sleep cycle length (min)</label>
+        <div class="setting-input-wrap">
+          <button class="setting-step" data-target="cycle-len" data-delta="-5" aria-label="Decrease by 5">&#8722;</button>
+          <input type="number" id="cycle-len" value="90" min="60" max="120" step="1">
+          <button class="setting-step" data-target="cycle-len" data-delta="5" aria-label="Increase by 5">+</button>
+        </div>
+      </div>
+      <div class="setting-group">
+        <label for="latency">Time to fall asleep (min)</label>
+        <div class="setting-input-wrap">
+          <button class="setting-step" data-target="latency" data-delta="-5" aria-label="Decrease by 5">&#8722;</button>
+          <input type="number" id="latency" value="15" min="0" max="60" step="1">
+          <button class="setting-step" data-target="latency" data-delta="5" aria-label="Increase by 5">+</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Time Input ───────────────────────────────────── -->
+  <div class="card">
+    <div class="time-section">
+      <div class="time-label" id="time-label">What time do you want to wake up?</div>
+      <div class="time-picker-wrap">
+        <input type="time" class="time-input-native" id="time-input" value="07:00" aria-labelledby="time-label">
+        <button class="now-btn" id="now-btn" style="display:none;" aria-label="Use current time">Now</button>
+      </div>
+      <div class="time-steppers">
+        <button class="step-btn" data-step="-30" aria-label="Subtract 30 minutes">-30</button>
+        <button class="step-btn" data-step="-5" aria-label="Subtract 5 minutes">-5</button>
+        <button class="step-btn" data-step="5" aria-label="Add 5 minutes">+5</button>
+        <button class="step-btn" data-step="30" aria-label="Add 30 minutes">+30</button>
+      </div>
+      <button class="calculate-btn" id="calc-btn">Calculate</button>
+    </div>
+  </div>
+
+  <!-- ── Results ──────────────────────────────────────── -->
+  <div class="card results-card" id="results-card">
+    <div class="results-heading" id="results-heading"></div>
+    <div class="result-list" id="result-list"></div>
+  </div>
+
+  <!-- ── CSV Upload ───────────────────────────────────── -->
+  <div class="card csv-section">
+    <button class="csv-toggle-btn" id="csv-toggle" aria-expanded="false">
+      <span class="chevron">&#9654;</span>
+      Personalize from your sleep history
+    </button>
+
+    <div class="csv-body" id="csv-body">
+      <div class="csv-note">
+        Upload a <strong>CSV</strong> with your sleep data to personalize your cycle length and fall asleep time. Your results will be saved in this browser so you won't need to upload again.<br><br>
+        Most smartwatches and wearables like Apple Watch, Fitbit, Garmin, and Oura let you export your sleep data from their companion apps or web dashboards. Check your device's health or sleep section for an export option, then reformat it into the simple layout below.<br><br>
+        <strong>Expected columns:</strong><br>
+        <code>date, bedtime, waketime</code><br><br>
+        <strong>Example rows:</strong><br>
+        <code>2025-06-01, 23:15, 07:00</code><br>
+        <code>2025-06-02, 22:45, 06:30</code><br><br>
+        Times in 24 hour format. Headers are optional. Columns must be in order: date, bedtime, wake time.
+      </div>
+
+      <div class="csv-drop-zone" id="csv-drop">
+        <div class="drop-icon">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="12" y1="18" x2="12" y2="12"/><polyline points="9 15 12 12 15 15"/></svg>
+        </div>
+        <p>Tap to choose a file or drag and drop</p>
+        <input type="file" id="csv-file" accept=".csv,text/csv" aria-label="Upload CSV file">
+      </div>
+
+      <div class="csv-result" id="csv-result"></div>
+    </div>
+  </div>
+
+</main>
+
+<!-- ── Footer ─────────────────────────────────────────── -->
+<footer class="site-footer">
+  <div class="footer-links">
+    <a class="ig-link" href="https://www.instagram.com/bhavyagoswami._/" target="_blank" rel="noopener noreferrer">
+      <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M12 2.163c3.204 0 3.584.012 4.85.07 1.366.062 2.633.336 3.608 1.311.975.975 1.249 2.242 1.311 3.608.058 1.266.07 1.646.07 4.85s-.012 3.584-.07 4.85c-.062 1.366-.336 2.633-1.311 3.608-.975.975-2.242 1.249-3.608 1.311-1.266.058-1.646.07-4.85.07s-3.584-.012-4.85-.07c-1.366-.062-2.633-.336-3.608-1.311-.975-.975-1.249-2.242-1.311-3.608C2.175 15.584 2.163 15.204 2.163 12s.012-3.584.07-4.85c.062-1.366.336-2.633 1.311-3.608C4.519 2.567 5.786 2.293 7.152 2.231 8.418 2.175 8.796 2.163 12 2.163zm0-2.163C8.741 0 8.333.014 7.053.072 5.775.131 4.602.425 3.635 1.392 2.668 2.358 2.131 3.531 2.072 4.81.014 8.333 0 8.741 0 12s.014 3.667.072 4.947c.059 1.277.596 2.45 1.563 3.417.966.967 2.14 1.504 3.418 1.563C8.333 23.986 8.741 24 12 24s3.667-.014 4.947-.072c1.277-.059 2.45-.596 3.417-1.563.967-.966 1.504-2.14 1.563-3.418C23.986 15.667 24 15.259 24 12s-.014-3.667-.072-4.947c-.059-1.277-.596-2.45-1.563-3.417C21.399.669 20.225.131 18.947.072 15.667.014 15.259 0 12 0zm0 5.838a6.162 6.162 0 1 0 0 12.324 6.162 6.162 0 0 0 0-12.324zm0 10.162a3.999 3.999 0 1 1 0-7.998 3.999 3.999 0 0 1 0 7.998zm6.406-10.845a1.44 1.44 0 1 1-2.88 0 1.44 1.44 0 0 1 2.88 0z"/></svg>
+      bhavyagoswami._
+    </a>
+  </div>
+
+  <div class="footer-privacy">no data leaves your device. no cookies. no tracking.</div>
+</footer>
+
+<div class="footer-quote">go to sleep my dally, angels are above you</div>
+
+<script>
+(function () {
+  'use strict';
+
+  /* ═══════════════════════════════════════════════════════
+     STARFIELD + CONSTELLATIONS  (canvas)
+     ═══════════════════════════════════════════════════════ */
+  const canvas = document.getElementById('starfield');
+  const ctx    = canvas.getContext('2d');
+  let W, H, stars = [], constellations = [];
+  const DPR = Math.min(window.devicePixelRatio || 1, 2);
+
+  function resize() {
+    W = window.innerWidth;
+    H = document.documentElement.scrollHeight;
+    canvas.width  = W * DPR;
+    canvas.height = H * DPR;
+    canvas.style.width  = W + 'px';
+    canvas.style.height = H + 'px';
+    ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
+  }
+
+  function initStars() {
+    stars = [];
+    const count = Math.floor((W * H) / 3200);   // density scales with viewport
+    for (let i = 0; i < count; i++) {
+      const brightness = Math.random();
+      stars.push({
+        x: Math.random() * W,
+        y: Math.random() * H,
+        r: brightness < .85 ? (.4 + Math.random() * .8) : (1.2 + Math.random() * 1),
+        baseA: .1 + Math.random() * .45,
+        phase: Math.random() * Math.PI * 2,
+        speed: .3 + Math.random() * 1.2,
+        hue: brightness > .92 ? (200 + Math.random() * 40) : 0,     // some blue-ish
+        sat: brightness > .92 ? (20 + Math.random() * 30) : 0,
+      });
+    }
+  }
+
+  /* Constellation definitions (x%, y% of viewport) */
+  const constellationDefs = [
+    // Big Dipper (upper left)
+    { pts:[[6,10],[10,8],[14,9],[18,12],[20,17],[18,21],[14,21]],
+      lines:[[0,1],[1,2],[2,3],[3,4],[4,5],[5,6],[6,3]] },
+    // Cassiopeia W (upper right)
+    { pts:[[74,7],[78,13],[82,7],[86,13],[90,7]],
+      lines:[[0,1],[1,2],[2,3],[3,4]] },
+    // Orion (right)
+    { pts:[[86,38],[89,36],[92,38],[89,43],[89,48],[86,52],[92,52]],
+      lines:[[0,1],[1,2],[0,3],[2,3],[3,4],[4,5],[4,6]] },
+    // Southern Cross (lower left)
+    { pts:[[8,78],[12,73],[12,83],[16,78],[12,78]],
+      lines:[[0,4],[1,4],[2,4],[3,4]] },
+    // Lyra triangle (lower right)
+    { pts:[[80,72],[85,68],[85,76],[82,72]],
+      lines:[[0,1],[1,2],[2,0],[0,3],[1,3],[2,3]] },
+    // Little triangle (mid-left)
+    { pts:[[4,45],[8,40],[10,48]],
+      lines:[[0,1],[1,2],[2,0]] },
+  ];
+
+  function buildConstellations() {
+    constellations = constellationDefs.map(def => ({
+      pts: def.pts.map(p => [p[0] / 100 * W, p[1] / 100 * H]),
+      lines: def.lines,
+    }));
+  }
+
+  function drawFrame(t) {
+    ctx.clearRect(0, 0, W, H);
+
+    // Stars
+    for (const s of stars) {
+      const twinkle = Math.sin(t * 0.001 * s.speed + s.phase);
+      const a = s.baseA + twinkle * .2;
+      if (s.hue) {
+        ctx.fillStyle = `hsla(${s.hue},${s.sat}%,82%,${Math.max(0, a)})`;
+      } else {
+        ctx.fillStyle = `rgba(255,255,255,${Math.max(0, a)})`;
+      }
+      ctx.beginPath();
+      ctx.arc(s.x, s.y, s.r, 0, Math.PI * 2);
+      ctx.fill();
+
+      // glow on larger stars
+      if (s.r > 1.2) {
+        ctx.fillStyle = `rgba(200,215,255,${Math.max(0, a * .12)})`;
+        ctx.beginPath();
+        ctx.arc(s.x, s.y, s.r * 3, 0, Math.PI * 2);
+        ctx.fill();
+      }
+    }
+
+    // Constellations
+    for (const c of constellations) {
+      // lines
+      ctx.strokeStyle = 'rgba(140,170,220,.12)';
+      ctx.lineWidth = 1;
+      for (const [a, b] of c.lines) {
+        ctx.beginPath();
+        ctx.moveTo(c.pts[a][0], c.pts[a][1]);
+        ctx.lineTo(c.pts[b][0], c.pts[b][1]);
+        ctx.stroke();
+      }
+      // dots
+      for (const p of c.pts) {
+        // glow
+        ctx.fillStyle = 'rgba(160,190,255,.08)';
+        ctx.beginPath();
+        ctx.arc(p[0], p[1], 5, 0, Math.PI * 2);
+        ctx.fill();
+        // star
+        const tw = Math.sin(t * 0.0008 + p[0] + p[1]);
+        ctx.fillStyle = `rgba(200,220,255,${.55 + tw * .2})`;
+        ctx.beginPath();
+        ctx.arc(p[0], p[1], 1.8, 0, Math.PI * 2);
+        ctx.fill();
+      }
+    }
+
+    requestAnimationFrame(drawFrame);
+  }
+
+  function initCanvas() {
+    resize();
+    initStars();
+    buildConstellations();
+    requestAnimationFrame(drawFrame);
+  }
+
+  window.addEventListener('resize', () => { resize(); initStars(); buildConstellations(); });
+  initCanvas();
+
+  // Also recalc when page height changes (results expand)
+  const ro = new ResizeObserver(() => { resize(); });
+  ro.observe(document.body);
+
+
+  /* ═══════════════════════════════════════════════════════
+     SLEEP CALCULATOR
+     ═══════════════════════════════════════════════════════ */
+  const STORAGE_KEY = 'sleep_personalized';
+
+  const modeBtns    = document.querySelectorAll('.mode-btn');
+  const cycleInput  = document.getElementById('cycle-len');
+  const latInput    = document.getElementById('latency');
+  const timeInput   = document.getElementById('time-input');
+  const timeLabel   = document.getElementById('time-label');
+  const nowBtn      = document.getElementById('now-btn');
+  const calcBtn     = document.getElementById('calc-btn');
+  const resultsCard = document.getElementById('results-card');
+  const resultsHead = document.getElementById('results-heading');
+  const resultList  = document.getElementById('result-list');
+  const csvToggle   = document.getElementById('csv-toggle');
+  const csvBody     = document.getElementById('csv-body');
+  const csvDrop     = document.getElementById('csv-drop');
+  const csvFile     = document.getElementById('csv-file');
+  const csvResult   = document.getElementById('csv-result');
+
+  let currentMode = 'wake';
+
+  /* ── localStorage ────────────────────────────────────── */
+  function loadSaved() {
+    try {
+      const raw = localStorage.getItem(STORAGE_KEY);
+      if (!raw) return null;
+      const data = JSON.parse(raw);
+      if (data && typeof data.cycleLen === 'number' && typeof data.latency === 'number') {
+        return data;
+      }
+    } catch (_) {}
+    return null;
+  }
+
+  function saveToBrowser(cycleLen, latency, nights) {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify({ cycleLen, latency, nights: nights || 0, savedAt: Date.now() }));
+  }
+
+  // On load: restore saved values
+  (function initValues() {
+    const saved = loadSaved();
+    if (saved) {
+      cycleInput.value = saved.cycleLen;
+      latInput.value   = saved.latency;
+    }
+  })();
+
+  // Auto-save whenever user edits settings
+  function autoSave() {
+    const c = clamp(parseInt(cycleInput.value, 10) || 90, 30, 180);
+    const l = clamp(parseInt(latInput.value, 10) || 0, 0, 90);
+    saveToBrowser(c, l, 0);
+  }
+  cycleInput.addEventListener('change', autoSave);
+  latInput.addEventListener('change', autoSave);
+
+  /* ── Settings stepper buttons ────────────────────────── */
+  document.querySelectorAll('.setting-step').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const input = document.getElementById(btn.dataset.target);
+      const delta = parseInt(btn.dataset.delta, 10);
+      const min   = parseInt(input.min, 10);
+      const max   = parseInt(input.max, 10);
+      let val = (parseInt(input.value, 10) || 0) + delta;
+      val = clamp(val, min, max);
+      input.value = val;
+      autoSave();
+    });
+  });
+
+  /* ── Mode switching ──────────────────────────────────── */
+  modeBtns.forEach(btn => {
+    btn.addEventListener('click', () => {
+      modeBtns.forEach(b => { b.classList.remove('active'); b.setAttribute('aria-selected', 'false'); });
+      btn.classList.add('active');
+      btn.setAttribute('aria-selected', 'true');
+      currentMode = btn.dataset.mode;
+      updateUI();
+    });
+  });
+
+  function updateUI() {
+    if (currentMode === 'wake') {
+      timeLabel.textContent = 'What time do you want to wake up?';
+      nowBtn.style.display  = 'none';
+    } else {
+      timeLabel.textContent = 'What time are you going to bed?';
+      nowBtn.style.display  = 'inline-block';
+    }
+    resultsCard.classList.remove('visible');
+  }
+
+  /* ── "Now" button ────────────────────────────────────── */
+  nowBtn.addEventListener('click', () => {
+    const n = new Date();
+    timeInput.value = pad(n.getHours()) + ':' + pad(n.getMinutes());
+  });
+
+  /* ── Time steppers (+/- 5 and 30 min) ────────────────── */
+  document.querySelectorAll('.step-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const step  = parseInt(btn.dataset.step, 10);
+      const parts = timeInput.value.split(':');
+      if (parts.length < 2) return;
+      let total = parseInt(parts[0], 10) * 60 + parseInt(parts[1], 10);
+      total = ((total + step) % 1440 + 1440) % 1440;
+      timeInput.value = pad(Math.floor(total / 60)) + ':' + pad(total % 60);
+    });
+  });
+
+  /* ── Calculate ───────────────────────────────────────── */
+  calcBtn.addEventListener('click', calculate);
+
+  function calculate() {
+    const cycleLen = clamp(parseInt(cycleInput.value, 10) || 90, 30, 180);
+    const latency  = clamp(parseInt(latInput.value,  10) || 0,  0,  90);
+    const parts    = timeInput.value.split(':');
+    if (parts.length < 2) return;
+    const h = parseInt(parts[0], 10);
+    const m = parseInt(parts[1], 10);
+    const cycles = [3, 4, 5, 6, 7];
+    const results = [];
+
+    if (currentMode === 'wake') {
+      const wakeMin = h * 60 + m;
+      cycles.forEach(c => {
+        const sleepMin = cycleLen * c;
+        let bedMin = wakeMin - sleepMin - latency;
+        bedMin = ((bedMin % 1440) + 1440) % 1440;
+        results.push({ time: bedMin, cycles: c, sleepMin });
+      });
+      resultsHead.innerHTML = 'Go to bed at one of these times to wake up at <strong>' + formatTime(h, m) + '</strong>';
+    } else {
+      const bedMin = h * 60 + m;
+      cycles.forEach(c => {
+        const sleepMin = cycleLen * c;
+        let wakeMin = bedMin + sleepMin + latency;
+        wakeMin = wakeMin % 1440;
+        results.push({ time: wakeMin, cycles: c, sleepMin });
+      });
+      resultsHead.innerHTML = 'Set your alarm for one of these times if you sleep at <strong>' + formatTime(h, m) + '</strong>';
+    }
+
+    renderResults(results);
+    resultsCard.classList.add('visible');
+    resultsCard.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+  }
+
+  function renderResults(results) {
+    resultList.innerHTML = '';
+    const bellSVG = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>';
+
+    results.forEach(r => {
+      const recommended = r.cycles >= 5 && r.cycles <= 6;
+      const hh = Math.floor(r.time / 60);
+      const mm = r.time % 60;
+      const durH = Math.floor(r.sleepMin / 60);
+      const durM = r.sleepMin % 60;
+      const durStr = durM > 0 ? durH + 'h ' + durM + 'm' : durH + 'h';
+
+      const item = document.createElement('div');
+      item.className = 'result-item fade-in' + (recommended ? ' recommended' : '');
+      item.innerHTML =
+        '<div class="result-time">' + formatTime(hh, mm) + '</div>' +
+        '<div class="result-meta">' +
+          '<div class="result-cycles">' + r.cycles + ' cycle' + (r.cycles > 1 ? 's' : '') + '</div>' +
+          '<div class="result-duration">' + durStr + ' of sleep</div>' +
+        '</div>' +
+        (recommended ? '<span class="result-badge">Recommended</span>' : '') +
+        '<button class="alarm-btn" title="Add to calendar" aria-label="Add alarm to calendar">' + bellSVG + '</button>';
+
+      item.querySelector('.alarm-btn').addEventListener('click', (e) => {
+        e.stopPropagation();
+        downloadICS(hh, mm, currentMode);
+      });
+
+      resultList.appendChild(item);
+    });
+  }
+
+  /* ── ICS calendar file generation ────────────────────── */
+  function downloadICS(h, m, mode) {
+    const now = new Date();
+    const target = new Date(now.getFullYear(), now.getMonth(), now.getDate(), h, m, 0);
+
+    // if the time has already passed today, schedule for tomorrow
+    if (target <= now) target.setDate(target.getDate() + 1);
+
+    const end = new Date(target.getTime() + 5 * 60000); // 5 min event
+
+    const title = mode === 'wake' ? 'Time for bed' : 'Wake up';
+    const desc  = mode === 'wake'
+      ? 'Head to bed now to complete your sleep cycles'
+      : 'End of your last sleep cycle. Rise and shine';
+
+    const fmt = d => d.getFullYear()
+      + pad(d.getMonth() + 1) + pad(d.getDate()) + 'T'
+      + pad(d.getHours()) + pad(d.getMinutes()) + '00';
+
+    const uid = 'sleep-' + Date.now() + '@sleep.app';
+
+    const ics = [
+      'BEGIN:VCALENDAR',
+      'VERSION:2.0',
+      'PRODID:-//sleep.//EN',
+      'CALSCALE:GREGORIAN',
+      'BEGIN:VEVENT',
+      'UID:' + uid,
+      'DTSTART:' + fmt(target),
+      'DTEND:' + fmt(end),
+      'SUMMARY:' + title,
+      'DESCRIPTION:' + desc,
+      'BEGIN:VALARM',
+      'TRIGGER:PT0M',
+      'ACTION:DISPLAY',
+      'DESCRIPTION:' + title,
+      'END:VALARM',
+      'END:VEVENT',
+      'END:VCALENDAR',
+    ].join('\r\n');
+
+    const blob = new Blob([ics], { type: 'text/calendar;charset=utf-8' });
+    const url  = URL.createObjectURL(blob);
+    const a    = document.createElement('a');
+    a.href     = url;
+    a.download = title.toLowerCase().replace(/ /g, '-') + '.ics';
+    document.body.appendChild(a);
+    a.click();
+    setTimeout(() => { document.body.removeChild(a); URL.revokeObjectURL(url); }, 100);
+  }
+
+  /* ── CSV Section ─────────────────────────────────────── */
+  csvToggle.addEventListener('click', () => {
+    const open = csvBody.classList.toggle('visible');
+    csvToggle.classList.toggle('open', open);
+    csvToggle.setAttribute('aria-expanded', String(open));
+  });
+
+  ['dragenter', 'dragover'].forEach(evt => {
+    csvDrop.addEventListener(evt, e => { e.preventDefault(); csvDrop.classList.add('dragover'); });
+  });
+  ['dragleave', 'drop'].forEach(evt => {
+    csvDrop.addEventListener(evt, e => { e.preventDefault(); csvDrop.classList.remove('dragover'); });
+  });
+  csvDrop.addEventListener('drop', e => {
+    const file = e.dataTransfer.files[0];
+    if (file) processCSV(file);
+  });
+  csvFile.addEventListener('change', () => {
+    if (csvFile.files[0]) processCSV(csvFile.files[0]);
+  });
+
+  function processCSV(file) {
+    const reader = new FileReader();
+    reader.onload = () => {
+      try {
+        const parsed = parseCSV(reader.result);
+        showCSVResult(parsed);
+      } catch (err) {
+        csvResult.className = 'csv-result visible error';
+        csvResult.innerHTML = '<strong>Error:</strong> ' + err.message;
+      }
+    };
+    reader.readAsText(file);
+  }
+
+  function parseCSV(text) {
+    const lines = text.trim().split(/\r?\n/).filter(l => l.trim());
+    let start = 0;
+    if (lines[0] && /date/i.test(lines[0])) start = 1;
+
+    const durations = [];
+
+    for (let i = start; i < lines.length; i++) {
+      const cols = lines[i].split(/[,;\t]+/).map(s => s.trim());
+      if (cols.length < 3) continue;
+
+      const bedParts  = cols[1].match(/^(\d{1,2}):(\d{2})$/);
+      const wakeParts = cols[2].match(/^(\d{1,2}):(\d{2})$/);
+      if (!bedParts || !wakeParts) continue;
+
+      let bedMin  = parseInt(bedParts[1],  10) * 60 + parseInt(bedParts[2],  10);
+      let wakeMin = parseInt(wakeParts[1], 10) * 60 + parseInt(wakeParts[2], 10);
+      if (wakeMin <= bedMin) wakeMin += 1440;
+      const dur = wakeMin - bedMin;
+      if (dur > 0 && dur < 840) durations.push(dur);
+    }
+
+    if (durations.length < 2) {
+      throw new Error('Need at least 2 valid rows. Check your format: date, bedtime (HH:MM), waketime (HH:MM).');
+    }
+
+    const avgDur = durations.reduce((a, b) => a + b, 0) / durations.length;
+    let bestCycle = 90, bestDiff = Infinity;
+    for (let n = 4; n <= 7; n++) {
+      const c = avgDur / n;
+      const d = Math.abs(c - 90);
+      if (d < bestDiff) { bestDiff = d; bestCycle = c; }
+    }
+    bestCycle = Math.round(bestCycle / 5) * 5;
+    bestCycle = clamp(bestCycle, 60, 120);
+
+    const numCycles = Math.round(avgDur / bestCycle);
+    let estLatency = Math.round(avgDur - numCycles * bestCycle);
+    estLatency = clamp(estLatency, 0, 45);
+
+    return { nights: durations.length, avgDur: Math.round(avgDur), cycleLen: bestCycle, latency: estLatency };
+  }
+
+  function showCSVResult(data) {
+    const avgH = Math.floor(data.avgDur / 60);
+    const avgM = data.avgDur % 60;
+    csvResult.className = 'csv-result visible';
+    csvResult.innerHTML =
+      '<strong>Analyzed ' + data.nights + ' night' + (data.nights > 1 ? 's' : '') + '</strong><br>' +
+      'Average total time in bed: ' + avgH + 'h ' + avgM + 'm<br>' +
+      'Estimated cycle length: <strong>' + data.cycleLen + ' min</strong><br>' +
+      'Estimated fall asleep time: <strong>' + data.latency + ' min</strong><br>' +
+      '<button class="csv-apply-btn" id="csv-apply">Apply and save</button>';
+
+    document.getElementById('csv-apply').addEventListener('click', () => {
+      cycleInput.value = data.cycleLen;
+      latInput.value   = data.latency;
+      saveToBrowser(data.cycleLen, data.latency, data.nights);
+      // flash green on inputs
+      [cycleInput, latInput].forEach(el => {
+        el.style.borderColor = 'var(--green)';
+        el.style.boxShadow   = '0 0 0 3px rgba(110,231,160,.18)';
+        setTimeout(() => { el.style.borderColor = ''; el.style.boxShadow = ''; }, 1200);
+      });
+    });
+  }
+
+  /* ── Helpers ─────────────────────────────────────────── */
+  function pad(n) { return String(n).padStart(2, '0'); }
+
+  function formatTime(h, m) {
+    const hh = ((h % 24) + 24) % 24;
+    const ampm = hh >= 12 ? 'PM' : 'AM';
+    const h12  = hh % 12 || 12;
+    return h12 + ':' + pad(m) + ' ' + ampm;
+  }
+
+  function clamp(v, lo, hi) { return Math.max(lo, Math.min(hi, v)); }
+
+  updateUI();
+
+})();
+</script>
+
+</body>
+</html>
