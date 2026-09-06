@@ -270,6 +270,23 @@
     -webkit-appearance: none;
     appearance: none;
     color-scheme: dark;
+    display: inline-flex;
+    justify-content: center;
+    align-items: center;
+  }
+  .time-input-native::-webkit-date-and-time-value {
+    text-align: center;
+  }
+  .time-input-native::-webkit-datetime-edit {
+    display: inline-flex;
+    justify-content: center;
+    text-align: center;
+    margin: 0 auto;
+  }
+  .time-input-native::-webkit-datetime-edit-fields-wrapper {
+    display: inline-flex;
+    justify-content: center;
+    margin: 0 auto;
   }
   .time-input-native:focus {
     outline: none;
@@ -398,6 +415,12 @@
   .result-item.recommended .result-time { color: var(--green); }
 
   .result-meta { flex: 1; min-width: 0; }
+  .result-cycles-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+  }
   .result-cycles {
     font-size: .8rem;
     color: var(--text-dim);
@@ -416,10 +439,10 @@
     letter-spacing: .06em;
     background: rgba(110,231,160,.14);
     color: var(--green);
-    padding: 4px 10px;
+    padding: 2px 8px;
     border-radius: 20px;
     white-space: nowrap;
-    flex-shrink: 0;
+    line-height: 1.4;
   }
 
   .alarm-btn {
@@ -614,12 +637,14 @@
 
   /* ── Responsive ─────────────────────────────────────── */
   @media (max-width: 420px) {
-    .header h1 { font-size: 2.6rem; }
+    .header h1 { font-size: 2.4rem; }
     .time-input-native { font-size: 1.5rem; padding: 12px 14px; min-width: 150px; }
-    .result-time { font-size: 1.2rem; min-width: 80px; }
+    .result-item { padding: 12px 12px; gap: 10px; }
+    .result-time { font-size: 1.25rem; min-width: 76px; }
+    .result-badge { font-size: .56rem; padding: 2px 6px; }
     .mode-btn { font-size: .74rem; padding: 10px 6px; }
     .settings-row { flex-direction: column; gap: 10px; }
-    .card { padding: 18px 16px; }
+    .card { padding: 18px 14px; }
   }
 
   /* Tablet landscape & small laptops */
@@ -1070,10 +1095,12 @@
       item.innerHTML =
         '<div class="result-time">' + formatTime(hh, mm) + '</div>' +
         '<div class="result-meta">' +
-          '<div class="result-cycles">' + r.cycles + ' cycle' + (r.cycles > 1 ? 's' : '') + '</div>' +
+          '<div class="result-cycles-row">' +
+            '<span class="result-cycles">' + r.cycles + ' cycle' + (r.cycles > 1 ? 's' : '') + '</span>' +
+            (recommended ? '<span class="result-badge">Recommended</span>' : '') +
+          '</div>' +
           '<div class="result-duration">' + durStr + ' of sleep</div>' +
         '</div>' +
-        (recommended ? '<span class="result-badge">Recommended</span>' : '') +
         '<button class="alarm-btn" title="Add to calendar" aria-label="Add alarm to calendar">' + bellSVG + '</button>';
 
       item.querySelector('.alarm-btn').addEventListener('click', (e) => {
