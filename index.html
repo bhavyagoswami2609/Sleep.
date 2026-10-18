@@ -253,49 +253,102 @@
     gap: 10px;
   }
 
-  .time-input-native {
+  .time-input-box {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
     background: var(--bg-input);
     border: 1px solid var(--border);
     border-radius: var(--radius-sm);
-    padding: 14px 20px;
+    padding: 10px 16px;
+    position: relative;
+    transition: border-color var(--transition), box-shadow var(--transition);
+  }
+  .time-input-box:focus-within {
+    border-color: var(--accent);
+    box-shadow: 0 0 0 3px var(--accent-glow);
+  }
+
+  .time-digit {
+    background: transparent;
+    border: none;
     color: var(--text);
     font-size: 1.8rem;
     font-weight: 600;
     font-family: var(--font);
     text-align: center;
-    letter-spacing: .04em;
-    transition: border-color var(--transition);
-    width: auto;
-    min-width: 180px;
+    width: 44px;
+    padding: 0;
+    margin: 0;
+    letter-spacing: .02em;
+    outline: none;
     -webkit-appearance: none;
     appearance: none;
-    color-scheme: dark;
-    display: inline-flex;
-    justify-content: center;
-    align-items: center;
   }
-  .time-input-native::-webkit-date-and-time-value {
-    text-align: center;
+  .time-digit::selection {
+    background: var(--accent-glow);
+    color: #fff;
   }
-  .time-input-native::-webkit-datetime-edit {
-    display: inline-flex;
-    justify-content: center;
-    text-align: center;
-    margin: 0 auto;
+
+  .time-sep {
+    font-size: 1.6rem;
+    font-weight: 600;
+    color: var(--text-dim);
+    margin: 0 2px;
+    user-select: none;
+    line-height: 1;
   }
-  .time-input-native::-webkit-datetime-edit-fields-wrapper {
-    display: inline-flex;
-    justify-content: center;
-    margin: 0 auto;
-  }
-  .time-input-native:focus {
-    outline: none;
-    border-color: var(--accent);
-    box-shadow: 0 0 0 3px var(--accent-glow);
-  }
-  .time-input-native::-webkit-calendar-picker-indicator {
-    filter: invert(1) brightness(0.7);
+
+  .ampm-toggle {
+    background: rgba(124,154,255,.12);
+    border: 1px solid rgba(124,154,255,.25);
+    border-radius: 6px;
+    color: var(--accent);
+    font-size: .82rem;
+    font-weight: 700;
+    font-family: var(--font);
+    padding: 6px 9px;
+    margin-left: 10px;
     cursor: pointer;
+    transition: all var(--transition);
+    user-select: none;
+    line-height: 1;
+  }
+  .ampm-toggle:hover {
+    background: rgba(124,154,255,.22);
+    color: #fff;
+  }
+  .ampm-toggle:active {
+    transform: scale(.95);
+  }
+
+  .clock-icon-btn {
+    background: none;
+    border: none;
+    color: var(--text-dim);
+    margin-left: 6px;
+    padding: 6px;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 6px;
+    transition: color var(--transition), background var(--transition);
+  }
+  .clock-icon-btn:hover {
+    color: var(--accent);
+    background: rgba(124,154,255,.08);
+  }
+
+  .time-native-hidden {
+    position: absolute;
+    width: 0;
+    height: 0;
+    opacity: 0;
+    pointer-events: none;
+    border: 0;
+    padding: 0;
+    margin: 0;
   }
 
   .now-btn {
@@ -638,7 +691,11 @@
   /* ── Responsive ─────────────────────────────────────── */
   @media (max-width: 420px) {
     .header h1 { font-size: 2.4rem; }
-    .time-input-native { font-size: 1.5rem; padding: 12px 14px; min-width: 150px; }
+    .time-input-box { padding: 8px 12px; }
+    .time-digit { font-size: 1.55rem; width: 36px; }
+    .time-sep { font-size: 1.4rem; }
+    .ampm-toggle { font-size: .75rem; padding: 5px 7px; margin-left: 6px; }
+    .clock-icon-btn { padding: 4px; margin-left: 2px; }
     .result-item { padding: 12px 12px; gap: 10px; }
     .result-time { font-size: 1.25rem; min-width: 76px; }
     .result-badge { font-size: .56rem; padding: 2px 6px; }
@@ -724,7 +781,19 @@
     <div class="time-section">
       <div class="time-label" id="time-label">What time do you want to wake up?</div>
       <div class="time-picker-wrap">
-        <input type="time" class="time-input-native" id="time-input" value="07:00" aria-labelledby="time-label">
+        <div class="time-input-box" id="time-input-box">
+          <input type="text" inputmode="numeric" pattern="[0-9]*" class="time-digit" id="time-hour" value="07" maxlength="2" aria-label="Hour" autocomplete="off">
+          <span class="time-sep">:</span>
+          <input type="text" inputmode="numeric" pattern="[0-9]*" class="time-digit" id="time-min" value="00" maxlength="2" aria-label="Minute" autocomplete="off">
+          <button type="button" class="ampm-toggle" id="ampm-btn" aria-label="Toggle AM or PM">AM</button>
+          <button type="button" class="clock-icon-btn" id="clock-btn" title="Pick from clock" aria-label="Pick from clock">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="12" cy="12" r="10"></circle>
+              <polyline points="12 6 12 12 16 14"></polyline>
+            </svg>
+          </button>
+          <input type="time" class="time-native-hidden" id="time-native-hidden" tabindex="-1" aria-hidden="true">
+        </div>
         <button class="now-btn" id="now-btn" style="display:none;" aria-label="Use current time">Now</button>
       </div>
       <div class="time-steppers">
@@ -936,7 +1005,11 @@
   const modeBtns    = document.querySelectorAll('.mode-btn');
   const cycleInput  = document.getElementById('cycle-len');
   const latInput    = document.getElementById('latency');
-  const timeInput   = document.getElementById('time-input');
+  const timeHour    = document.getElementById('time-hour');
+  const timeMin     = document.getElementById('time-min');
+  const ampmBtn     = document.getElementById('ampm-btn');
+  const clockBtn    = document.getElementById('clock-btn');
+  const timeNative  = document.getElementById('time-native-hidden');
   const timeLabel   = document.getElementById('time-label');
   const nowBtn      = document.getElementById('now-btn');
   const calcBtn     = document.getElementById('calc-btn');
@@ -950,6 +1023,118 @@
   const csvResult   = document.getElementById('csv-result');
 
   let currentMode = 'wake';
+  let wakeTime  = { h: 7, m: 0 };
+  let sleepTime = { h: 23, m: 0 };
+
+  /* ── Time input handlers ─────────────────────────────── */
+  function getTime24() {
+    let h = parseInt(timeHour.value, 10);
+    if (isNaN(h) || h < 1) h = 12;
+    if (h > 12) h = 12;
+    let m = parseInt(timeMin.value, 10);
+    if (isNaN(m) || m < 0) m = 0;
+    if (m > 59) m = 59;
+    const isPM = ampmBtn.textContent.trim() === 'PM';
+    if (isPM && h < 12) h += 12;
+    if (!isPM && h === 12) h = 0;
+    return { h, m };
+  }
+
+  function setTime24(h24, m) {
+    h24 = ((h24 % 24) + 24) % 24;
+    m   = ((m % 60) + 60) % 60;
+    const isPM = h24 >= 12;
+    const h12  = h24 % 12 || 12;
+    timeHour.value = pad(h12);
+    timeMin.value  = pad(m);
+    ampmBtn.textContent = isPM ? 'PM' : 'AM';
+    timeNative.value = pad(h24) + ':' + pad(m);
+  }
+
+  function saveActiveModeTime() {
+    const t = getTime24();
+    if (currentMode === 'wake') {
+      wakeTime = t;
+    } else {
+      sleepTime = t;
+    }
+  }
+
+  // Auto-select text on focus so user can immediately type on phone or laptop
+  timeHour.addEventListener('focus', () => timeHour.select());
+  timeMin.addEventListener('focus', () => timeMin.select());
+
+  timeHour.addEventListener('input', () => {
+    let val = timeHour.value.replace(/\D/g, '');
+    if (val.length === 1 && parseInt(val, 10) > 1) {
+      // 2-9 mean 02-09, format and jump to minutes
+      timeHour.value = pad(val);
+      saveActiveModeTime();
+      timeMin.focus();
+      timeMin.select();
+    } else if (val.length >= 2) {
+      let num = parseInt(val.slice(-2), 10);
+      if (num === 0) num = 12;
+      if (num > 12) num = 12;
+      timeHour.value = pad(num);
+      saveActiveModeTime();
+      timeMin.focus();
+      timeMin.select();
+    } else {
+      timeHour.value = val;
+    }
+  });
+
+  timeHour.addEventListener('blur', () => {
+    let num = parseInt(timeHour.value, 10);
+    if (isNaN(num) || num < 1) num = 12;
+    if (num > 12) num = 12;
+    timeHour.value = pad(num);
+    saveActiveModeTime();
+  });
+
+  timeMin.addEventListener('input', () => {
+    let val = timeMin.value.replace(/\D/g, '');
+    if (val.length >= 2) {
+      let num = parseInt(val.slice(-2), 10);
+      if (num > 59) num = 59;
+      timeMin.value = pad(num);
+      saveActiveModeTime();
+    } else {
+      timeMin.value = val;
+    }
+  });
+
+  timeMin.addEventListener('blur', () => {
+    let num = parseInt(timeMin.value, 10);
+    if (isNaN(num) || num < 0) num = 0;
+    if (num > 59) num = 59;
+    timeMin.value = pad(num);
+    saveActiveModeTime();
+  });
+
+  ampmBtn.addEventListener('click', () => {
+    ampmBtn.textContent = ampmBtn.textContent.trim() === 'AM' ? 'PM' : 'AM';
+    saveActiveModeTime();
+  });
+
+  clockBtn.addEventListener('click', () => {
+    const { h, m } = getTime24();
+    timeNative.value = pad(h) + ':' + pad(m);
+    if (typeof timeNative.showPicker === 'function') {
+      try { timeNative.showPicker(); } catch (_) { timeNative.click(); }
+    } else {
+      timeNative.click();
+    }
+  });
+
+  timeNative.addEventListener('change', () => {
+    const parts = timeNative.value.split(':');
+    if (parts.length >= 2) {
+      setTime24(parseInt(parts[0], 10), parseInt(parts[1], 10));
+      saveActiveModeTime();
+    }
+  });
 
   /* ── localStorage ────────────────────────────────────── */
   function loadSaved() {
@@ -1015,9 +1200,11 @@
     if (currentMode === 'wake') {
       timeLabel.textContent = 'What time do you want to wake up?';
       nowBtn.style.display  = 'none';
+      setTime24(wakeTime.h, wakeTime.m);
     } else {
       timeLabel.textContent = 'What time are you going to bed?';
       nowBtn.style.display  = 'inline-block';
+      setTime24(sleepTime.h, sleepTime.m);
     }
     resultsCard.classList.remove('visible');
   }
@@ -1025,18 +1212,19 @@
   /* ── "Now" button ────────────────────────────────────── */
   nowBtn.addEventListener('click', () => {
     const n = new Date();
-    timeInput.value = pad(n.getHours()) + ':' + pad(n.getMinutes());
+    setTime24(n.getHours(), n.getMinutes());
+    saveActiveModeTime();
   });
 
   /* ── Time steppers (+/- 5 and 30 min) ────────────────── */
   document.querySelectorAll('.step-btn').forEach(btn => {
     btn.addEventListener('click', () => {
-      const step  = parseInt(btn.dataset.step, 10);
-      const parts = timeInput.value.split(':');
-      if (parts.length < 2) return;
-      let total = parseInt(parts[0], 10) * 60 + parseInt(parts[1], 10);
-      total = ((total + step) % 1440 + 1440) % 1440;
-      timeInput.value = pad(Math.floor(total / 60)) + ':' + pad(total % 60);
+      const step = parseInt(btn.dataset.step, 10);
+      const { h, m } = getTime24();
+      let total = h * 60 + m + step;
+      total = ((total % 1440) + 1440) % 1440;
+      setTime24(Math.floor(total / 60), total % 60);
+      saveActiveModeTime();
     });
   });
 
@@ -1046,24 +1234,24 @@
   function calculate() {
     const cycleLen = clamp(parseInt(cycleInput.value, 10) || 90, 30, 180);
     const latency  = clamp(parseInt(latInput.value,  10) || 0,  0,  90);
-    const parts    = timeInput.value.split(':');
-    if (parts.length < 2) return;
-    const h = parseInt(parts[0], 10);
-    const m = parseInt(parts[1], 10);
-    const cycles = [3, 4, 5, 6, 7];
+    const { h, m } = getTime24();
     const results = [];
 
     if (currentMode === 'wake') {
       const wakeMin = h * 60 + m;
+      // Cycles ordered chronologically from earliest evening bedtime to latest
+      const cycles = [6, 5, 4, 3];
       cycles.forEach(c => {
         const sleepMin = cycleLen * c;
         let bedMin = wakeMin - sleepMin - latency;
         bedMin = ((bedMin % 1440) + 1440) % 1440;
         results.push({ time: bedMin, cycles: c, sleepMin });
       });
-      resultsHead.innerHTML = 'Go to bed at one of these times to wake up at <strong>' + formatTime(h, m) + '</strong>';
+      resultsHead.innerHTML = 'Go to bed at one of these times to wake up refreshed at <strong>' + formatTime(h, m) + '</strong>';
     } else {
       const bedMin = h * 60 + m;
+      // Cycles ordered chronologically through morning wake times
+      const cycles = [4, 5, 6, 7];
       cycles.forEach(c => {
         const sleepMin = cycleLen * c;
         let wakeMin = bedMin + sleepMin + latency;
